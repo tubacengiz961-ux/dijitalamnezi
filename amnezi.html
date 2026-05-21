@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijital Amnezi (Google Etkisi) Deneyi</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --bg: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+
+        .container {
+            max-width: 750px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 { color: var(--primary); margin-top: 0; }
+        h2 { color: var(--secondary); font-weight: normal; }
+
+        .btn {
+            padding: 12px 28px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        /* iOS Dokunmatik Ekran Hover/Active Optimizasyonu */
+        @media (hover: hover) {
+            .btn:hover { transform: scale(1.05); background-color: #2980b9; }
+            .option-btn:hover { background-color: #eccc68; border-color: #ffa502; }
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background-color: #2980b9;
+        }
+
+        .section { display: none; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .alert-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .alert-save { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .alert-delete { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+
+        .facts-container {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .facts-container ul { margin: 0; padding-left: 20px; }
+        .facts-container li { margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+
+        #timer {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--danger);
+            margin: 20px 0;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            background-color: #f1f2f6;
+            border: 2px solid #dfe4ea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: 0.2s;
+        }
+
+        .option-btn:active {
+            background-color: #eccc68; 
+            border-color: #ffa502;
+        }
+
+        .analysis-box {
+            text-align: left;
+            background-color: #fdfbfb;
+            border-left: 5px solid var(--primary);
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+        
+        .highlight { color: var(--danger); font-weight: bold; }
+        
+        input[type="number"] {
+            padding: 12px;
+            font-size: 1.5em;
+            width: 120px;
+            text-align: center;
+            border-radius: 8px;
+            border: 2px solid #bdc3c7;
+            margin-top: 10px;
+        }
+
+        .progress-text {
+            color: #7f8c8d;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- GİRİŞ EKRANI -->
+    <div id="intro-section" class="section" style="display: block;">
+        <h1>Dijital Amnezi Deneyi</h1>
+        <p>Birazdan size havuzdan rastgele seçilmiş <b>8 adet</b> kısa bilgi gösterilecek. Bu bilgileri okumanız için sadece <b>20 saniyeniz</b> olacak. Ardından hafıza testine geçilecektir.</p>
+        <button class="btn" onclick="startExperiment()">Teste Başla</button>
+    </div>
+
+    <!-- YÖNERGE EKRANI -->
+    <div id="instruction-section" class="section">
+        <h2 id="instruction-title">Sistem Bilgilendirmesi</h2>
+        <div id="alert-message" class="alert-box"></div>
+        <button class="btn" onclick="startReading()">Bilgileri Gör</button>
+    </div>
+
+    <!-- BİLGİ OKUMA EKRANI -->
+    <div id="reading-section" class="section">
+        <h2>Lütfen aşağıdaki bilgileri hızlıca okuyun:</h2>
+        <div class="facts-container">
+            <ul id="facts-list"></ul>
+        </div>
+        <div id="timer">20</div>
+    </div>
+
+    <!-- MATEMATİKSEL DİKKAT DAĞITICI -->
+    <div id="distractor-section" class="section">
+        <h2>Zihinsel Sıfırlama</h2>
+        <p>Hafıza testine geçmeden önce lütfen aşağıdaki işlemleri zihinden çözün.</p>
+        <div class="progress-text" id="math-progress">İşlem: 1 / 3</div>
+        <h1 style="color:var(--accent); font-size:3.5em; margin:10px 0;" id="math-question">...</h1>
+        <input type="number" id="math-answer" placeholder="Cevap" onkeydown="if(event.key==='Enter') checkDistractor()">
+        <br>
+        <button class="btn" onclick="checkDistractor()">Sonraki</button>
+    </div>
+
+    <!-- QUIZ EKRANI -->
+    <div id="quiz-section" class="section">
+        <h2>Hafıza Testi</h2>
+        <div class="progress-text" id="quiz-progress">Soru: 1 / 8</div>
+        <p id="question-text" style="font-size: 1.3em; font-weight: bold; margin-bottom: 20px;"></p>
+        <div id="options-container" class="options-grid"></div>
+    </div>
+
+    <!-- SONUÇ EKRANI -->
+    <div id="result-section" class="section">
+        <h1>Test Tamamlandı!</h1>
+        <h2 id="score-display" style="font-size: 2.5em; color: var(--accent);"></h2>
+        
+        <div class="analysis-box" id="analysis-box">
+            <h3 style="color: var(--primary);">Deneyin Gerçek Amacı</h3>
+            <p>Siz bir <b>"Dijital Amnezi" (Google Etkisi)</b> deneyine katıldınız.</p>
+            <p id="group-explanation"></p>
+            <p><b>Bilimsel Bağlam:</b> Beynimiz enerjiyi korumak üzere tasarlanmıştır. Bir bilginin "dijital olarak kayıtlı" olduğuna inanırsa, onu nöral ağlarına kodlamaktan vazgeçer. Araya giren matematik işlemleri, kısa süreli belleğinizi kasten sıfırlamak içindi. Böylece sadece <b>gerçekten uzun süreli belleğe</b> kaydettiğiniz bilgileri ölçebildik.</p>
+        </div>
+        
+        <button class="btn" style="background-color: var(--secondary);" onclick="location.reload()">Yeni Bir Denek Al</button>
+    </div>
+
+</div>
+
+<script>
+    const questionsPerUser = 8;
+    const mathTasksPerUser = 3;
+    const readingTimeLimit = 20; 
+    
+    let userGroup = ''; 
+    let readingTimer;
+    let timeLeft = readingTimeLimit;
+
+    let activeFacts = [];
+    let activeQuiz = [];
+    let activeMath = [];
+
+    const mathPool = [
+        { q: "15 + 28 = ?", a: 43 }, { q: "9 x 7 = ?", a: 63 },
+        { q: "65 - 18 = ?", a: 47 }, { q: "144 ÷ 12 = ?", a: 12 },
+        { q: "8 x 6 = ?", a: 48 },   { q: "52 + 19 = ?", a: 71 },
+        { q: "7 x 8 = ?", a: 56 },   { q: "100 - 37 = ?", a: 63 },
+        { q: "45 ÷ 5 = ?", a: 9 },   { q: "13 x 3 = ?", a: 39 }
+    ];
+
+    // YENİLENMİŞ VE ZORLAŞTIRILMIŞ BİLGİ HAVUZU (40 Adet)
+    const experimentPool = [
+        { fact: "Ornitorenklerin (Platipus) mideleri yoktur, besinler doğrudan bağırsaklarına geçer.", q: "Ornitorenklerin hangi organı yoktur?", options: ["Akciğerleri", "Mideleri", "Böbrekleri", "Safra keseleri"], ans: 1 },
+        { fact: "Wombat isimli Avustralya keselilerinin dışkısı küp şeklindedir.", q: "Wombatların dışkısı ne şekildedir?", options: ["Küre", "Silindir", "Küp", "Piramit"], ans: 2 },
+        { fact: "Timsahların midesindeki asit, çelik bir çiviyi eritebilecek kadar güçlüdür.", q: "Timsahların mide asidi neyi eritebilir?", options: ["Plastiği", "Çelik bir çiviyi", "Camı", "Altını"], ans: 1 },
+        { fact: "İstiridyeler, çevre koşullarına göre hayatları boyunca defalarca cinsiyet değiştirebilirler.", q: "İstiridyeler hayatları boyunca hangi özelliği değiştirebilirler?", options: ["Kabuk rengini", "Kan grubunu", "Cinsiyetlerini", "Solunum tiplerini"], ans: 2 },
+        { fact: "Zürafaların dilleri güneş yanığından korunmak için koyu mor veya siyah renktedir.", q: "Zürafaların dilleri neden koyu renklidir?", options: ["Zehirli bitkileri sindirmek için", "Güneş yanığından korunmak için", "Isıyı hapsetmek için", "Avcıları korkutmak için"], ans: 1 },
+        { fact: "Astronotlar uzayda yerçekimi olmadığı için geğiremezler; gaz ve sıvı midede ayrışamaz.", q: "Uzayda yerçekimi olmadığı için astronotlar hangi eylemi gerçekleştiremez?", options: ["Hıçkırmak", "Esnemek", "Geğirmek", "Hapşırmak"], ans: 2 },
+        { fact: "Venüs gezegeninde bir gün, kendi etrafındaki yavaş dönüşünden dolayı Venüs yılından daha uzundur.", q: "Hangi gezegende bir gün, bir yıldan daha uzundur?", options: ["Mars", "Venüs", "Jüpiter", "Neptün"], ans: 1 },
+        { fact: "Fillerin kulaklarındaki damar desenleri, insanların parmak izi gibi tamamen benzersizdir.", q: "Fillerin hangi özelliği insan parmak izi gibi tamamen benzersizdir?", options: ["Hortum çizgileri", "Fildişi dokusu", "Göz retina desenleri", "Kulak damar desenleri"], ans: 3 },
+        { fact: "Antarktika, yılda aldığı yağış miktarının düşüklüğü nedeniyle teknik olarak dünyanın en büyük çölüdür.", q: "Dünyanın en büyük çölü teknik olarak neresidir?", options: ["Sahra Çölü", "Gobi Çölü", "Antarktika", "Atacama Çölü"], ans: 2 },
+        { fact: "İnsan vücudundaki demir miktarı, yaklaşık 7.5 santimetrelik bir çivi yapmaya yeterlidir.", q: "İnsan vücudundaki demirle ne yapılabilir?", options: ["Küçük bir çivi", "Bir dikiş iğnesi", "Bir bozuk para", "Bir ataş"], ans: 0 },
+        { fact: "Mantis karidesi, kıskaçlarını bir tabanca mermisi hızında fırlatarak akvaryum camını kırabilir.", q: "Mantis karidesi kıskaçlarıyla neyi kırabilir?", options: ["İstiridye kabuğunu", "Akvaryum camını", "Denizaltı zırhını", "Mercan kayalarını"], ans: 1 },
+        { fact: "Balinalar boğulmamak için uyurken beyinlerinin sadece bir yarısını dinlendirirler.", q: "Balinalar uyurken neden beyinlerinin yarısını açık tutarlar?", options: ["Avcılardan korunmak için", "Boğulmamak için", "Yönlerini kaybetmemek için", "Sıcaklıklarını korumak için"], ans: 1 },
+        { fact: "Ahtapotların dokunaçlarında bağımsız karar verebilen binlerce nöron bulunur.", q: "Ahtapotların dokunaçlarında ne bulunur?", options: ["Zehir keseleri", "Elektrik üreten hücreler", "Bağımsız karar veren nöronlar", "Isı sensörleri"], ans: 2 },
+        { fact: "Uzaya gönderilen ilk canlı türü, 1947 yılında fırlatılan meyve sinekleridir.", q: "Uzaya gönderilen ilk canlı türü aşağıdakilerden hangisidir?", options: ["Köpek", "Maymun", "Meyve sinekleri", "Kurbağa"], ans: 2 },
+        { fact: "Tembel hayvanların (sloth) tek bir yaprağı tamamen sindirmesi yaklaşık 30 gün sürer.", q: "Tembel hayvanların tek bir yaprağı sindirmesi ne kadar sürer?", options: ["1 Saat", "1 Gün", "1 Hafta", "30 Gün"], ans: 3 },
+        { fact: "Flamingoların tüyleri doğduklarında pembe değil, soluk gri veya beyazdır.", q: "Flamingo yavrularının tüyleri doğduklarında ne renktir?", options: ["Pembe", "Gri/Beyaz", "Siyah", "Sarı"], ans: 1 },
+        { fact: "Denizanalarının beyni, kalbi veya kemiği yoktur; vücutlarının %95'i sudan oluşur.", q: "Denizanalarının vücudunun %95'i nedir?", options: ["Jelatin", "Tuz", "Su", "Asit"], ans: 2 },
+        { fact: "Bukalemunların sağ ve sol gözleri birbirinden tamamen bağımsız yönlere hareket edebilir.", q: "Bukalemunların gözleriyle ilgili hangi bilgi doğrudur?", options: ["Karanlıkta parlarlar", "Sadece siyah beyaz görürler", "Bağımsız yönlere bakabilirler", "Su altında kapanırlar"], ans: 2 },
+        { fact: "Kurbağalar avlarını yutarken gözlerini kapatıp kafalarının içine doğru çekerek lokmayı iterler.", q: "Kurbağalar avlarını yutarken nasıl bir fiziksel hareket yaparlar?", options: ["Dillerini şişirirler", "Gözlerini içeri çekerler", "Karınlarını kasarlar", "Boyunlarını uzatırlar"], ans: 1 },
+        { fact: "Su aygırlarının derisinden salgılanan kırmızımsı sıvı, doğal bir güneş kremi görevi görür.", q: "Su aygırlarının salgıladığı kırmızımsı sıvı ne işe yarar?", options: ["Parazitleri uzaklaştırır", "Doğal bir güneş kremidir", "Avcıları zehirler", "Vücut ısısını yükseltir"], ans: 1 },
+        { fact: "Kedilerin köprücük kemikleri iskeletlerine bağlı değildir, sadece omuz kaslarına gömülüdür.", q: "Kedilerin hangi kemiği iskeletlerine doğrudan bağlı değildir?", options: ["Kuyruk sokumu", "Köprücük kemiği", "Kaburgaları", "Çene kemiği"], ans: 1 },
+        { fact: "Kelebeklerin kanatları aslında şeffaftır, renkli görünümü ışığı yansıtan minik pullar sağlar.", q: "Kelebeklerin kanatlarının asıl rengi nedir?", options: ["Siyah", "Beyaz", "Şeffaf", "Sarı"], ans: 2 },
+        { fact: "Bir bulutun ortalama ağırlığı yaklaşık 500 ton, yani 100 filin ağırlığına eşdeğerdir.", q: "Ortalama bir bulutun ağırlığı ne kadardır?", options: ["5 Ton", "50 Ton", "500 Ton", "5000 Ton"], ans: 2 },
+        { fact: "Ornitorenkler (Platypus) yavrularını emzirmek için memeye sahip değildir, sütü derilerinden terlerler.", q: "Ornitorenkler yavrularına sütü nasıl verir?", options: ["Kusarak", "Derilerinden terleyerek", "Yapraklara sürerek", "Gözyaşlarıyla"], ans: 1 },
+        { fact: "Jüpiter ve Satürn gezegenlerinde yüksek basınç sebebiyle elmas yağmuru yağar.", q: "Jüpiter ve Satürn'de ne yağmuru yağdığı düşünülmektedir?", options: ["Altın", "Gümüş", "Kükürt", "Elmas"], ans: 3 },
+        { fact: "Pangolinler, memeli olmalarına rağmen vücutları keratin pullarla kaplı tek hayvandır.", q: "Vücudu keratin pullarla kaplı tek memeli hayvan hangisidir?", options: ["Armadillo", "Kirpi", "Pangolin", "Kunduz"], ans: 2 },
+        { fact: "Bir kurşun kalemin içindeki grafitle aralıksız 56 kilometre uzunluğunda bir çizgi çizilebilir.", q: "Bir kurşun kalemle aralıksız kaç kilometrelik çizgi çizilebilir?", options: ["5 km", "12 km", "56 km", "100 km"], ans: 2 },
+        { fact: "Köpekbalıklarının göz kırpabilen yalnızca bir türü vardır: Kaplan Köpekbalığı.", q: "Göz kırpabilen tek köpekbalığı türü hangisidir?", options: ["Büyük Beyaz", "Kaplan Köpekbalığı", "Çekiçbaşlı", "Balina Köpekbalığı"], ans: 1 },
+        { fact: "İnsan kemiği, ağırlık bazında karşılaştırıldığında çelikten yaklaşık 5 kat daha dayanıklıdır.", q: "İnsan kemiği ağırlık bazında çelikten ne kadar daha dayanıklıdır?", options: ["2 Kat", "5 Kat", "10 Kat", "Dayanıklı değildir"], ans: 1 },
+        { fact: "Karıncalar akciğerlere sahip değildir; vücutlarındaki minik deliklerden (spirakül) oksijen alırlar.", q: "Karıncaların hangi solunum organı yoktur?", options: ["Akciğer", "Trake", "Solungaç", "Deri"], ans: 0 },
+        { fact: "Dünyadaki okyanusların en derin noktası olan Mariana Çukuruna Everest Dağı tamamen sığabilir.", q: "Everest Dağı'nı tamamen içine alabilecek okyanus çukuru hangisidir?", options: ["Porto Riko Çukuru", "Tonga Çukuru", "Mariana Çukuru", "Japonya Çukuru"], ans: 2 },
+        { fact: "Salyangozların ağzında, yiyecekleri kazımaya yarayan ve radula adı verilen binlerce mikroskobik diş bulunur.", q: "Salyangozların ağzında binlerce dişi barındıran yapıya ne ad verilir?", options: ["Maksilla", "Radula", "Mandibula", "Proboskis"], ans: 1 },
+        { fact: "Kırlangıçlar uçuş halindeyken hem böcek avlayıp yiyebilir hem de su içebilirler.", q: "Uçarken hem yemek yiyip hem su içebilen kuş türü hangisidir?", options: ["Kartal", "Martı", "Kırlangıç", "Güvercin"], ans: 2 },
+        { fact: "Deve kuşlarının gözleri, kendi beyinlerinden daha büyük bir hacme sahiptir.", q: "Deve kuşlarının hangi organı kendi beyninden daha büyüktür?", options: ["Kalbi", "Midesi", "Akciğeri", "Gözü"], ans: 3 },
+        { fact: "Kar leoparları, gırtlak yapıları farklı olduğu için büyük kediler arasında kükreyemeyen tek türdür.", q: "Büyük kediler arasında kükreyemeyen tek tür hangisidir?", options: ["Puma", "Kar Leoparı", "Jaguar", "Çita"], ans: 1 },
+        { fact: "İguanalar kalp atışlarını yavaşlatarak suyun altında 45 dakikaya kadar nefeslerini tutabilirler.", q: "İguanalar kalp atışlarını yavaşlatarak su altında ne kadar kalabilir?", options: ["10 Dakika", "25 Dakika", "45 Dakika", "2 Saat"], ans: 2 },
+        { fact: "Kunduzların ön dişleri demir içerdiği için turuncu renktedir ve bu onları çok daha dayanıklı yapar.", q: "Kunduzların dişleri neden turuncu renktedir?", options: ["Ağaç kabuğu yediklerinden", "Demir içerdiğinden", "Mine tabakası olmadığından", "Güneş ışığından"], ans: 1 },
+        { fact: "Sivrisineklerin çenelerinde avlarının derisini kesmek için kullandıkları 47 adet mikroskobik diş bulunur.", q: "Sivrisineklerin ağzında kaç adet mikroskobik diş bulunur?", options: ["Hiç yoktur", "12", "47", "100"], ans: 2 },
+        { fact: "Yarasalar bacak kasları çok zayıf olduğu için yerden havalanamazlar, düşerek uçuşa geçerler.", q: "Yarasalar neden yerden havalanamazlar?", options: ["Kanatları çok ağır olduğu için", "Gözleri görmediği için", "Bacak kasları zayıf olduğu için", "Kuyrukları olmadığı için"], ans: 2 },
+        { fact: "Kivi kuşları, kanatları olmayan ve koku alma duyusu çok gelişmiş tek kuş türüdür.", q: "Kanatları olmayan tek kuş türü hangisidir?", options: ["Penguen", "Devekuşu", "Kivi", "Emu"], ans: 2 }
+    ];
+
+    function shuffleArray(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    let currentMathTaskIndex = 0;
+    let currentQuestionIndex = 0;
+    let correctAnswers = 0;
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+        document.getElementById(sectionId).style.display = 'block';
+    }
+
+    function startExperiment() {
+        let shuffledPool = shuffleArray([...experimentPool]);
+        activeFacts = shuffledPool.slice(0, questionsPerUser);
+        activeQuiz = shuffleArray([...activeFacts]);
+
+        let shuffledMath = shuffleArray([...mathPool]);
+        activeMath = shuffledMath.slice(0, mathTasksPerUser);
+
+        assignGroup();
+    }
+
+    function assignGroup() {
+        userGroup = Math.random() > 0.5 ? 'saved' : 'deleted';
+        const alertBox = document.getElementById('alert-message');
+        
+        if (userGroup === 'saved') {
+            alertBox.className = 'alert-box alert-save';
+            alertBox.innerHTML = "💾 BİLGİLENDİRME:<br><br>Birazdan okuyacağınız 8 bilgi sistemimizde BİLGİSAYARA KAYDEDİLECEKTİR. Test sırasında bu dosyanın ulaşılabileceğini bilerek rahatça okuyabilirsiniz.";
+        } else {
+            alertBox.className = 'alert-box alert-delete';
+            alertBox.innerHTML = "⚠️ UYARI:<br><br>Birazdan okuyacağınız 8 bilgi güvenlik nedeniyle KALICI OLARAK SİLİNECEKTİR. Geri dönüşü yoktur. Lütfen çok dikkatli okuyun.";
+        }
+
+        const listEl = document.getElementById('facts-list');
+        listEl.innerHTML = '';
+        activeFacts.forEach(item => {
+            let li = document.createElement('li');
+            li.innerText = item.fact;
+            listEl.appendChild(li);
+        });
+
+        showSection('instruction-section');
+    }
+
+    function startReading() {
+        showSection('reading-section');
+        timeLeft = readingTimeLimit;
+        document.getElementById('timer').innerText = timeLeft;
+        
+        readingTimer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(readingTimer);
+                startDistractor();
+            }
+        }, 1000);
+    }
+
+    function startDistractor() {
+        showSection('distractor-section');
+        loadMathTask();
+    }
+
+    function loadMathTask() {
+        if (currentMathTaskIndex < activeMath.length) {
+            document.getElementById('math-progress').innerText = `İşlem: ${currentMathTaskIndex + 1} / ${mathTasksPerUser}`;
+            document.getElementById('math-question').innerText = activeMath[currentMathTaskIndex].q;
+            document.getElementById('math-answer').value = '';
+        } else {
+            showSection('quiz-section');
+            loadQuestion();
+        }
+    }
+
+    function checkDistractor() {
+        const inputEl = document.getElementById('math-answer');
+        const ans = inputEl.value;
+        
+        if(ans.trim() === "") {
+            alert("Lütfen işleme bir cevap yazın.");
+            return;
+        }
+
+        if (currentMathTaskIndex === activeMath.length - 1) {
+            inputEl.blur(); 
+        }
+
+        currentMathTaskIndex++;
+        loadMathTask();
+    }
+
+    function loadQuestion() {
+        if (currentQuestionIndex >= activeQuiz.length) {
+            endExperiment();
+            return;
+        }
+
+        document.getElementById('quiz-progress').innerText = `Soru: ${currentQuestionIndex + 1} / ${questionsPerUser}`;
+        const currentQ = activeQuiz[currentQuestionIndex];
+        document.getElementById('question-text').innerText = currentQ.q;
+        
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+
+        currentQ.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index, currentQ.ans);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIndex, correctIndex) {
+        if (selectedIndex === correctIndex) {
+            correctAnswers++;
+        }
+        currentQuestionIndex++;
+        loadQuestion();
+    }
+
+    function endExperiment() {
+        showSection('result-section');
+        document.getElementById('score-display').innerText = `Skorunuz: ${correctAnswers} / ${questionsPerUser}`;
+
+        const expText = document.getElementById('group-explanation');
+        
+        if (userGroup === 'saved') {
+            expText.innerHTML = `Sistem sizi gizlice <b>"Bilgiler Kaydedildi"</b> grubuna atamıştı. Başlangıçta size bilgilerin bir dosyaya kaydedileceği söylendi. Bu mesaj, beyninizin rehavete kapılmasına ve bilgileri kendi hafızasında tutmak yerine dış kaynağa güvenmesine sebep oldu. Bu gruptaki katılımcıların puanları istatistiksel olarak daha düşüktür.`;
+        } else {
+            expText.innerHTML = `Sistem sizi gizlice <b>"Bilgiler Silinecek"</b> grubuna atamıştı. Başlangıçta size bilgilerin kalıcı olarak silineceği söylendi. Bu tehdit mesajı, beyninizi alarma geçirdi ve bilgiyi dış bir kaynağa güvenemeyeceği için nöronlarına çok daha sıkı kodlamaya zorladı. Bu gruptaki katılımcılar her zaman çok daha yüksek başarı gösterirler.`;
+        }
+    }
+</script>
+</body>
+</html>
